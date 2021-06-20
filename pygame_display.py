@@ -70,7 +70,8 @@ def window_loop_iteration():
     sprites_to_blit.draw(window_surface)
     pygame.display.update()
 
-    # Commented out since we dont want to limit the speed of MTSP algorithm.
-    #clock.tick(FPS_LIMIT)  
+    # Comment out below code if actual algorithm appears slow since we dont want to limit the speed of MTSP algorithm.
+    # The below line ensures FPS_LIMIT(current value of 60) iterations per second.
+    clock.tick(FPS_LIMIT)  
 
 # endregion
