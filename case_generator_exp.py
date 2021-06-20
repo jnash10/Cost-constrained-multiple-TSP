@@ -5,11 +5,8 @@ from random import randint
 import numpy as np
 
 n = int(input("how many disctricts do you want(enter integer): "))
-
 m = 50
-
 cities = []
-
 
 for i in range(0,n) :
     cities.append((randint(0,m),randint(0,m)))
@@ -17,8 +14,6 @@ for i in range(0,n) :
 #cities = np.array(cities)
 
 #print(cities[0],cities[1])
-
-
 
 def dist(a, b):
     return int(((a[0]-b[0])**2+(a[1]-b[1])**2)**(1/2))
@@ -40,10 +35,3 @@ print("\nthe cities are: \n\n", cities)
 
 print("\n \n \n \nthe distance matrix is: \n")
 print(np.array2string(dist_matrix, separator = ', '))
-
-
-
-
-
-
-

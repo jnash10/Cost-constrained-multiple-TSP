@@ -25,6 +25,6 @@ def tsp_solver(coords, distance_matrix):
     plt.plot(per_x, per_y)
     title = str("length of route is "+ str(distance))
     plt.title(title)
-    #plt.show()
+    plt.show()
 
     return distance
