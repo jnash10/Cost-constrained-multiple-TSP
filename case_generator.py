@@ -12,7 +12,7 @@ def case_gen():
 
     for i in range(0,n) :
         cities.append((randint(0,m),randint(0,m)))
-
+    print("first city: "+str(cities[0]))
     def dist(a, b):
         return int(((a[0]-b[0])**2+(a[1]-b[1])**2)**(1/2))
 
