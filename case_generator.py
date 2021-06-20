@@ -6,7 +6,7 @@ import numpy as np
 
 #seed("test")
 def case_gen():
-    n = int(input("how many disctricts do you want(enter integer): "))
+    n = int(input("how many districts do you want(enter integer): "))
     m = 50
     cities = []
 
