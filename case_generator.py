@@ -10,8 +10,6 @@ def case_gen():
     m = 50
     cities = []
 
-
-
     for i in range(0,n) :
         cities.append((randint(0,m),randint(0,m)))
 
