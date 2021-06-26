@@ -6,6 +6,8 @@ from pygame.draw import line
 
 from pygame_display import *
 
+DEBUG = True
+
 # In case we want to specify a different window size
 window_size = (800, 800)
 window_constants_init()
@@ -28,7 +30,10 @@ def case_gen(number_of_nodes):
 
     return cities_positions
 
-number_of_nodes = 50
+if DEBUG:
+    number_of_nodes = 20
+else:
+    number_of_nodes = int(input("Enter number of nodes: "))
 cities_positions = case_gen(number_of_nodes)
 #print(cities_positions)
 
@@ -118,7 +123,6 @@ class SortedQueue:
     def return_queue(self):
         return self.queue
 
-
 def get_point_on_either_side_sorted_in_angle_difference(angle):
     sorted_points_clockwise = SortedQueue()
     sorted_points_anticlockwise = SortedQueue()
@@ -145,7 +149,7 @@ def get_point_on_either_side_sorted_in_angle_difference(angle):
 
     return sorted_points_clockwise.return_queue(), sorted_points_anticlockwise.return_queue()
 
-def draw_initial_lines(number_of_lines):
+def draw_initial_lines_and_possible_solutions(number_of_lines):
     global lines_angle, lines_points_clockwise_sorted, lines_points_anticlockwise_sorted
     lines_angle = []
     lines_points_clockwise_sorted = []
@@ -196,7 +200,7 @@ def draw_initial_lines(number_of_lines):
         line_stop = (x, y)
         add_to_lines_to_blit(line_start, line_stop, WHITE)
     
-        current_angle += angle_shift        
+        current_angle += angle_shift
 
 # DONE - Find the first iteration of lines
 # TODO - Find why the line doesn't appear in the middle of closest points when poins have different distances to the hub
@@ -204,9 +208,12 @@ def draw_initial_lines(number_of_lines):
 
 if __name__ == "__main__":
 
-    number_of_lines = int(input("Enter number of lines to draw: "))
+    if DEBUG:
+        number_of_lines = 5
+    else:
+        number_of_lines = int(input("Enter number of lines to draw: "))
     
-    draw_initial_lines(number_of_lines)
+    draw_initial_lines_and_possible_solutions(number_of_lines)
 
     pygame_init()
 

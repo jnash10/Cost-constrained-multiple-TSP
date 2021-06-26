@@ -78,6 +78,18 @@ def draw_lines():
 
 # endregion
 
+# region custom events
+
+def end_program():
+    pygame.quit()
+    quit()
+
+custom_events_by_key_press = {
+    pygame.K_q: end_program
+}
+
+# end region
+
 # region mainloop
 
 update_required = True
@@ -89,10 +101,9 @@ def window_loop_iteration():
             quit()
 
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_q:
-                pygame.quit()
-                quit()
-    
+            if event.key in custom_events_by_key_press:
+                custom_events_by_key_press[event.key]()
+                
     if update_required:
         window_surface.fill(BLACK)
         sprites_to_blit.update()
