@@ -65,7 +65,7 @@ class Node(pygame.sprite.Sprite):
     def change_color(self, node_color):
         global update_required
         update_required = True
-        
+
         pygame.draw.circle(self.image, node_color, (node_size//2, node_size//2), node_size//2)
 
 lines_to_blit = []  # Add (line_start, line_stop, line_color) tuples here
@@ -99,6 +99,7 @@ custom_events_by_key_press = {
 update_required = True
 
 def window_loop_iteration():
+    global update_required
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  
             pygame.quit()
