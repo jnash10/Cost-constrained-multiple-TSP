@@ -63,6 +63,9 @@ class Node(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center = self.position)
 
     def change_color(self, node_color):
+        global update_required
+        update_required = True
+        
         pygame.draw.circle(self.image, node_color, (node_size//2, node_size//2), node_size//2)
 
 lines_to_blit = []  # Add (line_start, line_stop, line_color) tuples here
@@ -111,6 +114,7 @@ def window_loop_iteration():
         sprites_to_blit.draw(window_surface)
         draw_lines()
         pygame.display.update()
+        update_required = False
 
     # Comment out below code if actual algorithm appears slow since we dont want to limit the speed of MTSP algorithm.
     # The below line ensures FPS_LIMIT(current value of 60) iterations per second.
