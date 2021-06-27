@@ -25,6 +25,7 @@ def pygame_init():
     FONT = pygame.font.Font(None, 30)
 
 BLACK = (0, 0, 0)
+GREY = (127, 127, 127)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 ORANGE = (255, 127, 0)

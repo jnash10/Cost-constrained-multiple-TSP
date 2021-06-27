@@ -38,7 +38,7 @@ def get_square_of_distance_between_points(point1, point2):
     return (point1[0]-point2[0]) ** 2 + (point1[1]-point2[1]) ** 2
 
 class Place(Node):
-    place_color = RED
+    place_color = GREY
 
     def __init__(self, place_position):
         super().__init__(place_position, self.place_color)
@@ -85,10 +85,48 @@ class Sector:
             place.change_color(self.sector_color)
 
     def calculate_sector_weight(self):
+        # NOTE: When modifiying this function, also modify functions 'add_place' and 'remove_place'
         self.sector_weight = 0
 
         for place in self.places_in_sector:
             self.sector_weight += place.place_weight
+
+    def add_place(self, place: Place):
+        if place in self.places_in_sector:
+            raise Exception("Place being added is already in this sector.")
+
+        place_to_clockwise = place.first_place_clockwise
+        place_to_anticlockwise = place.first_place_anticlockwise
+
+        if place_to_anticlockwise == self.places_in_sector[0]:
+            self.first_place = place
+            self.places_in_sector.insert(0, place)
+
+        elif place_to_clockwise  == self.places_in_sector[-1]:
+            self.last_place = place
+            self.places_in_sector.insert(len(self.places_in_sector), place)
+
+        else:
+            raise Exception("Place being added is not neighbouring a place on either end of self.places_in_sector")
+
+        place.change_color(self.sector_color)
+    
+    def remove_place(self, place: Place):
+        if place not in self.places_in_sector:
+            raise Exception("Place being removed is not in this sector.")
+
+        if place == self.places_in_sector[0]:
+            self.places_in_sector.pop(0)
+            self.first_place = self.places_in_sector[0]
+
+        elif place == self.places_in_sector[-1]:
+            self.places_in_sector.pop(-1)
+            self.last_place = self.places_in_sector[-1]
+
+        else:
+            raise Exception("Place being removed is not in either end of self.places_in_sector")
+
+        place.change_color(Place.place_color)
 
 class SortedQueue:
 
@@ -178,8 +216,18 @@ def initialise_sectors(places, points_sorted_by_angle_index, number_of_sectors, 
     second_place_index = points_sorted_by_angle_index[-1]
     sectors.append(Sector(places[first_place_index-1], places[second_place_index-1]))
 
+    return sectors
+
+def move_place_between_sectors(place_being_moved, original_sector, final_sector):
+    original_sector.remove_place(place_being_moved)
+    final_sector.add_place(place_being_moved)
+
+def switch_over_one_random_place():
+    i = random.randint(1, number_of_sectors-1)
+    move_place_between_sectors(sectors[i].first_place, sectors[i], sectors[i-1])
+
 def initialise():
-    global hub_position
+    global number_of_nodes, number_of_sectors, hub_position, sectors
 
     if DEBUG:
         number_of_nodes = 20
@@ -204,8 +252,9 @@ def initialise():
 
     sectors = initialise_sectors(places, points_sorted_by_angle_index, number_of_sectors, number_of_nodes)
 
-    # Triggering function draw_next_line whenever return key is pressed
-    custom_events_by_key_press[pygame.K_RETURN] = None
+    # Triggering function switch_over_one_random_place whenever return key is pressed
+    # This function will move a random place on either end of a sector into the neighbouring sector
+    custom_events_by_key_press[pygame.K_RETURN] = switch_over_one_random_place
 
 # endregion
 
