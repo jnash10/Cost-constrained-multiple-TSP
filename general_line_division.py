@@ -110,6 +110,8 @@ class Sector:
             raise Exception("Place being added is not neighbouring a place on either end of self.places_in_sector")
 
         place.change_color(self.sector_color)
+        
+        self.sector_weight += place.place_weight
     
     def remove_place(self, place: Place):
         if place not in self.places_in_sector:
@@ -127,6 +129,8 @@ class Sector:
             raise Exception("Place being removed is not in either end of self.places_in_sector")
 
         place.change_color(Place.place_color)
+
+        self.sector_weight -= place.place_weight
 
 class SortedQueue:
 
