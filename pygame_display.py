@@ -71,9 +71,13 @@ class Node(pygame.sprite.Sprite):
 lines_to_blit = []  # Add (line_start, line_stop, line_color) tuples here
 
 def add_to_lines_to_blit(line_start, line_stop, line_color = WHITE):
+    global update_required
+    update_required = True
     lines_to_blit.append((line_start, line_stop, line_color))
 
 def remove_lines_to_blit():
+    global update_required, lines_to_blit
+    update_required = True
     lines_to_blit = []
 
 def draw_lines():
@@ -97,9 +101,13 @@ custom_events_by_key_press = {
 # region mainloop
 
 update_required = True
+frames_to_next_update_max = 60
+frames_to_next_update = frames_to_next_update_max
+
+functions_to_run_every_second = []
 
 def window_loop_iteration():
-    global update_required
+    global update_required, frames_to_next_update
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  
             pygame.quit()
@@ -108,6 +116,13 @@ def window_loop_iteration():
         if event.type == pygame.KEYUP:
             if event.key in custom_events_by_key_press:
                 custom_events_by_key_press[event.key]()
+
+    frames_to_next_update -= 1
+    if frames_to_next_update == 0:
+        update_required = True
+        frames_to_next_update = frames_to_next_update_max
+        for function in functions_to_run_every_second:
+            function()
                 
     if update_required:
         window_surface.fill(BLACK)
@@ -119,6 +134,6 @@ def window_loop_iteration():
 
     # Comment out below code if actual algorithm appears slow since we dont want to limit the speed of MTSP algorithm.
     # The below line ensures FPS_LIMIT(current value of 60) iterations per second.
-    clock.tick(FPS_LIMIT)  
+    clock.tick(FPS_LIMIT)
 
 # endregion

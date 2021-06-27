@@ -1,12 +1,13 @@
-import random, math, typing, statistics
+import random, math, typing, statistics, numpy
 from pygame_display import *
+from python_tsp.exact import solve_tsp_dynamic_programming
 
 # region constants
 
 window_size = (800, 800)
 window_constants_init()
 
-DEBUG = True
+DEBUG = False
 
 # endregion
 
@@ -67,7 +68,8 @@ class Sector:
         self.places_in_sector = []  # From first place to last place
         self.init_places_in_sector()
 
-        self.sector_color = SECTOR_COLORS.pop()
+        self.sector_color = SECTOR_COLORS.pop(0)
+        SECTOR_COLORS.append(self.sector_color)
         self.color_places_in_sector()
 
         self.sector_weight = None
@@ -165,11 +167,19 @@ class SortedQueue:
         key, value = self.queue[0]
         return key, value
 
+    def pop_smallest_element(self):
+        key, value = self.queue.pop(0)
+        return key, value
+
     def return_queue(self):
         return self.queue
 
     def return_keys(self):
         return list(map(lambda x: x[0], self.queue))
+
+    def empty_queue(self):
+        self.queue = []
+        self.length = 0
 
 # TODO - See if origin_position works as intended.
 def get_point_angle(point, origin_position):
@@ -276,17 +286,73 @@ def generate_possible_place_switches_sorted_on_varance_of_sector_weights(possibl
         varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
         possible_place_switches.add_element((sector_having_place_removed, place_being_moved, sector_having_place_added), varance_of_sector_weights)
 
-def initialise():
-    global number_of_nodes, number_of_sectors, hub_position, sectors, possible_place_switches
+def draw_lines_seperating_sectors():
+    remove_lines_to_blit()
+    first_point = sectors[-1].last_place.position
+    for sector in sectors:
+        second_point = sector.first_place.position
+        median_point = (first_point[0] + second_point[0]) // 2, (first_point[1] + second_point[1]) // 2
+        add_to_lines_to_blit(hub_position, median_point)
+        first_point = sector.last_place.position
 
-    if DEBUG:
-        number_of_nodes = 20
-        number_of_sectors = 5
-    else:
-        number_of_nodes = int(input("Enter number of nodes to generate: "))
-        number_of_sectors = int(input("Enter number of lines to draw: "))
+def get_current_sectors_weight():
+    sector_weights = list(map(lambda x: x.sector_weight, sectors))
+    varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
+    return varance_of_sector_weights
 
-    node_positions = generate_node_position(number_of_nodes)
+def act_on_first_task_from_possible_place_switches():
+    action, on_action_sections_coefficients = possible_place_switches.get_smallest_element()
+
+    if action is None:
+        print("Relatively best solution found.")
+        functions_to_run_every_second.pop(functions_to_run_every_second.index(act_on_first_task_from_possible_place_switches))
+        solve_all_tsp()
+        return
+
+    possible_place_switches.pop_smallest_element()
+
+    previous_actions_from_possible_place_switches.append(action)
+
+    sector_having_place_removed, place_being_moved, sector_having_place_added = action
+    move_place_between_sectors(sector_having_place_removed, place_being_moved, sector_having_place_added)
+
+    draw_lines_seperating_sectors()
+    possible_place_switches.empty_queue()
+    possible_place_switches.add_element(None, get_current_sectors_weight())
+    generate_possible_place_switches_sorted_on_varance_of_sector_weights(possible_place_switches)
+
+    print("Current weight variance: ", on_action_sections_coefficients)
+
+    return False
+
+def get_distance_matrix_from_points(points):
+    distance_matrix = numpy.asarray([[get_square_of_distance_between_points(p1, p2) for p2 in points] for p1 in points])
+    return distance_matrix
+
+def solve_by_tsp(points):
+    distance_matrix = get_distance_matrix_from_points(points)  # Note that each distance here is squared everywhere
+    permutation = solve_tsp_dynamic_programming(distance_matrix) [0]
+    return permutation
+
+def solve_all_tsp():
+    for sector in sectors:
+        points_in_sector = list(map(lambda x: x.place_position, sector.places_in_sector))
+        points_in_sector.insert(0, hub_position)
+
+        solution = solve_by_tsp(points_in_sector)
+
+        solution_by_points_index = list(map(lambda x: node_positions.index(points_in_sector[x]), solution))
+
+        sector_color = sector.sector_color
+
+        first_point = node_positions[solution_by_points_index[0]]
+        for solution_point_index in solution_by_points_index[1:]:
+            second_point = node_positions[solution_point_index]
+            add_to_lines_to_blit(first_point, second_point, sector_color)
+            first_point = second_point
+
+def initialise(number_of_nodes, number_of_sectors, node_positions):
+    global hub_position, sectors, possible_place_switches, previous_actions_from_possible_place_switches
 
     # 0 index node is the hub. This fact is also used in function get_points_sorted_by_angle_from_positive_x_axis
     hub_position = node_positions[0]
@@ -305,25 +371,46 @@ def initialise():
     # Triggering function switch_over_one_random_place whenever return key is pressed
     # This function will move a random place on either end of a sector into the neighbouring sector
     custom_events_by_key_press[pygame.K_RETURN] = switch_over_one_random_place
+    custom_events_by_key_press[pygame.K_l] = draw_lines_seperating_sectors
+    custom_events_by_key_press[pygame.K_i] = act_on_first_task_from_possible_place_switches
 
     possible_place_switches = SortedQueue()
-    sector_weights = list(map(lambda x: x.sector_weight, sectors))
-    varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
-    possible_place_switches.add_element(None, varance_of_sector_weights)
+    previous_actions_from_possible_place_switches = []
+    possible_place_switches.add_element(None, get_current_sectors_weight())
 
     generate_possible_place_switches_sorted_on_varance_of_sector_weights(possible_place_switches)
 
-    print(possible_place_switches.return_queue())
+    draw_lines_seperating_sectors()
+
+    functions_to_run_every_second.append(act_on_first_task_from_possible_place_switches)
 
 # endregion
 
 # region mainloop
 
-pygame_init()
-
 if __name__ == "__main__":
 
-    initialise()
+    manual_mode = input("Enter node positions manually? (y for yes, anything else for no): ")
+    if manual_mode == "y":
+        node_positions = eval(input("Enter node positions as a list of tuple positions: "))
+        number_of_nodes = len(node_positions)
+        number_of_sectors = int(input("Enter number of lines to draw: "))
+
+    else:
+        if DEBUG:
+            number_of_nodes = 50
+            number_of_sectors = 5
+        else:
+            number_of_nodes = int(input("Enter number of nodes to generate: "))
+            number_of_sectors = int(input("Enter number of lines to draw: "))
+
+        node_positions = generate_node_position(number_of_nodes)
+
+        print("Node positions:", node_positions)
+
+    pygame_init()
+
+    initialise(number_of_nodes, number_of_sectors, node_positions)
 
     while True:
         window_loop_iteration()
