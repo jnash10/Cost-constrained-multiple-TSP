@@ -1,4 +1,4 @@
-import random, math, typing
+import random, math, typing, statistics
 from pygame_display import *
 
 # region constants
@@ -85,7 +85,11 @@ class Sector:
             place.change_color(self.sector_color)
 
     def calculate_sector_weight(self):
-        # NOTE: When modifiying this function, also modify functions 'add_place' and 'remove_place'
+        # NOTE: When modifiying this function, also modify functions:
+        # 1) add_place
+        # 2) remove_place
+        # 3) get_weight_if_place_added
+        # 4) get_weight_if_place_removed
         self.sector_weight = 0
 
         for place in self.places_in_sector:
@@ -110,7 +114,7 @@ class Sector:
             raise Exception("Place being added is not neighbouring a place on either end of self.places_in_sector")
 
         place.change_color(self.sector_color)
-        
+
         self.sector_weight += place.place_weight
     
     def remove_place(self, place: Place):
@@ -131,6 +135,12 @@ class Sector:
         place.change_color(Place.place_color)
 
         self.sector_weight -= place.place_weight
+
+    def get_weight_if_place_added(self, place:Place):
+        return self.sector_weight + place.place_weight
+
+    def get_weight_if_place_removed(self, place:Place):
+        return self.sector_weight - place.place_weight
 
 class SortedQueue:
 
@@ -222,16 +232,52 @@ def initialise_sectors(places, points_sorted_by_angle_index, number_of_sectors, 
 
     return sectors
 
-def move_place_between_sectors(place_being_moved, original_sector, final_sector):
+def move_place_between_sectors(original_sector, place_being_moved, final_sector):
     original_sector.remove_place(place_being_moved)
     final_sector.add_place(place_being_moved)
 
 def switch_over_one_random_place():
     i = random.randint(1, number_of_sectors-1)
-    move_place_between_sectors(sectors[i].first_place, sectors[i], sectors[i-1])
+    move_place_between_sectors(sectors[i], sectors[i].first_place, sectors[i-1])
+
+def get_variance_of_sector_weights(sector_weights):
+    return statistics.variance(sector_weights)
+
+# TODO - Test if code actually works
+def generate_possible_place_switches_sorted_on_varance_of_sector_weights(possible_place_switches):
+    sector_weights_original = list(map(lambda x: x.sector_weight, sectors))
+    for sector_index in range(number_of_sectors):
+        # Effect of removing first place in sector
+        sector_weights = list(sector_weights_original)
+        sector_having_place_removed_index = sector_index
+        sector_having_place_removed = sectors[sector_having_place_removed_index]
+        place_being_moved = sector_having_place_removed.first_place
+        sector_having_place_added_index = sector_index - 1
+        sector_having_place_added = sectors[sector_having_place_added_index]
+        sector_weights[sector_having_place_removed_index] = sector_having_place_removed.get_weight_if_place_removed(place_being_moved)
+        sector_weights[sector_having_place_added_index] = sector_having_place_added.get_weight_if_place_added(place_being_moved)
+
+        varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
+        possible_place_switches.add_element((sector_having_place_removed, place_being_moved, sector_having_place_added), varance_of_sector_weights)
+
+        # Effect of removing last place in sector
+        sector_weights = list(sector_weights_original)
+        sector_having_place_removed_index = sector_index
+        sector_having_place_removed = sectors[sector_index]
+        place_being_moved = sector_having_place_removed.last_place
+        if sector_index + 1 < number_of_sectors:
+            sector_having_place_added_index = sector_index + 1
+        else:
+            sector_having_place_added_index = 0
+        sector_having_place_added = sectors[sector_having_place_added_index]
+        sector_weights[sector_having_place_removed_index] = sector_having_place_removed.get_weight_if_place_removed(place_being_moved)
+        sector_weights[sector_having_place_added_index] = sector_having_place_added.get_weight_if_place_added(place_being_moved)
+
+        varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
+        possible_place_switches.add_element((sector_having_place_removed, place_being_moved, sector_having_place_added), varance_of_sector_weights)
 
 def initialise():
-    global number_of_nodes, number_of_sectors, hub_position, sectors
+    global number_of_nodes, number_of_sectors, hub_position, sectors, possible_place_switches
 
     if DEBUG:
         number_of_nodes = 20
@@ -259,6 +305,15 @@ def initialise():
     # Triggering function switch_over_one_random_place whenever return key is pressed
     # This function will move a random place on either end of a sector into the neighbouring sector
     custom_events_by_key_press[pygame.K_RETURN] = switch_over_one_random_place
+
+    possible_place_switches = SortedQueue()
+    sector_weights = list(map(lambda x: x.sector_weight, sectors))
+    varance_of_sector_weights = get_variance_of_sector_weights(sector_weights)
+    possible_place_switches.add_element(None, varance_of_sector_weights)
+
+    generate_possible_place_switches_sorted_on_varance_of_sector_weights(possible_place_switches)
+
+    print(possible_place_switches.return_queue())
 
 # endregion
 
