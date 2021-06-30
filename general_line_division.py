@@ -7,7 +7,7 @@ from python_tsp.exact import solve_tsp_dynamic_programming
 window_size = (800, 800)
 window_constants_init()
 
-DEBUG = True
+DEBUG = False
 
 JSON_DATA_FILE = "data.json"
 IMAGE_FOLDER_PATH = "Solution images"
@@ -116,7 +116,8 @@ class Sector:
             self.places_in_sector.insert(len(self.places_in_sector), place)
 
         else:
-            print(place.place_position, place_to_clockwise.place_position, place_to_anticlockwise.place_position)
+            if DEBUG:
+                print(place.place_position, place_to_clockwise.place_position, place_to_anticlockwise.place_position)
             raise Exception("Place being added is not neighbouring a place on either end of self.places_in_sector")
 
         place.change_color(self.sector_color)
@@ -313,7 +314,8 @@ def act_on_first_task_from_possible_place_switches():
     action, on_action_sections_coefficients = possible_place_switches.get_smallest_element()
 
     if action is None:
-        print("Relatively best solution found.")
+        if DEBUG:
+            print("Relatively best solution found.")
         functions_to_run_every_second.pop(functions_to_run_every_second.index(act_on_first_task_from_possible_place_switches))
         solve_all_tsp()
         goto_next_test_case()
@@ -331,7 +333,8 @@ def act_on_first_task_from_possible_place_switches():
     possible_place_switches.add_element(None, get_current_sectors_weight())
     generate_possible_place_switches_sorted_on_varance_of_sector_weights(possible_place_switches)
 
-    print("Current weight variance: ", on_action_sections_coefficients)
+    if DEBUG:
+        print("Current weight variance: ", on_action_sections_coefficients)
 
     return False
 
@@ -395,18 +398,9 @@ def initialise(number_of_nodes, number_of_sectors, node_positions):
     functions_to_run_every_second.append(act_on_first_task_from_possible_place_switches)
 
 def goto_next_test_case():
-        global program_finished
-        program_finished = True
-
-        # old sprites cleanup
-        '''hub.kill()
-        del hub
-        for place in places:
-            place.kill()
-
-            del place'''
-
-        sprites_to_blit.empty()
+    if input_mode == "j":
+            global program_finished
+            program_finished = True
 
 def run_mtsp(number_of_nodes, number_of_sectors, node_positions):
     
@@ -477,12 +471,19 @@ if __name__ == "__main__":
                 node_positions[i][1] = window_height - node_positions[i][1]
 
             for number_of_sectors in test_case["sectors"]:
-                run_mtsp(number_of_nodes, number_of_sectors, node_positions)
+                try:
+                    run_mtsp(number_of_nodes, number_of_sectors, node_positions)
 
-                if "file_name" in test_case:
-                    png_file_name = test_case["file_name"] + "_sectors_" + str(number_of_sectors) + ".png"
-                    png_file_path = os.path.join(IMAGE_FOLDER_PATH, png_file_name)
-                    pygame.image.save(window_surface, png_file_path)
+                    if "file_name" in test_case:
+                        png_file_name = test_case["file_name"] + "_sectors_" + str(number_of_sectors) + ".png"
+                        png_file_path = os.path.join(IMAGE_FOLDER_PATH, png_file_name)
+                        pygame.image.save(window_surface, png_file_path)
+
+                    sprites_to_blit.empty()
+
+                except BaseException as exp:
+                    print(exp)
+                    print(f"Unable to find solution with {number_of_sectors} sectors for: \n{node_positions}\n")
 
     else:
         print("Input mode not identified.")
