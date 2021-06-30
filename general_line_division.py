@@ -1,4 +1,4 @@
-import random, math, typing, statistics, numpy, json
+import random, math, typing, statistics, numpy, json, os
 from pygame_display import *
 from python_tsp.exact import solve_tsp_dynamic_programming
 
@@ -7,9 +7,10 @@ from python_tsp.exact import solve_tsp_dynamic_programming
 window_size = (800, 800)
 window_constants_init()
 
-DEBUG = False
+DEBUG = True
 
 JSON_DATA_FILE = "data.json"
+IMAGE_FOLDER_PATH = "Solution images"
 
 # endregion
 
@@ -232,6 +233,9 @@ def initialise_sectors(places, points_sorted_by_angle_index, number_of_sectors, 
 
     place_index = 0  # refers to points_sorted_by_angle_index which doesn't include hub
 
+    if DEBUG:
+        print(f"Points sorted by angle: {list(map(lambda x: places[x-1].place_position, points_sorted_by_angle_index))}")
+
     first_place_index = points_sorted_by_angle_index[place_index]
     place_index += number_of_places_per_sector
     while place_index < number_of_nodes:
@@ -312,6 +316,7 @@ def act_on_first_task_from_possible_place_switches():
         print("Relatively best solution found.")
         functions_to_run_every_second.pop(functions_to_run_every_second.index(act_on_first_task_from_possible_place_switches))
         solve_all_tsp()
+        goto_next_test_case()
         return
 
     possible_place_switches.pop_smallest_element()
@@ -357,7 +362,7 @@ def solve_all_tsp():
             first_point = second_point
 
 def initialise(number_of_nodes, number_of_sectors, node_positions):
-    global hub_position, sectors, possible_place_switches, previous_actions_from_possible_place_switches
+    global hub_position, hub, places, sectors, possible_place_switches, previous_actions_from_possible_place_switches
 
     # 0 index node is the hub. This fact is also used in function get_points_sorted_by_angle_from_positive_x_axis
     hub_position = node_positions[0]
@@ -389,13 +394,33 @@ def initialise(number_of_nodes, number_of_sectors, node_positions):
 
     functions_to_run_every_second.append(act_on_first_task_from_possible_place_switches)
 
+def goto_next_test_case():
+        global program_finished
+        program_finished = True
+
+        # old sprites cleanup
+        '''hub.kill()
+        del hub
+        for place in places:
+            place.kill()
+
+            del place'''
+
+        sprites_to_blit.empty()
+
 def run_mtsp(number_of_nodes, number_of_sectors, node_positions):
-    pygame_init()
+    
+    global program_finished
+    program_finished = False
 
     initialise(number_of_nodes, number_of_sectors, node_positions)
 
+    custom_events_by_key_press[pygame.K_n] = goto_next_test_case
+
     while not program_finished:
         window_loop_iteration()
+
+        #print(program_finished)
 
 # endregion
 
@@ -403,11 +428,16 @@ def run_mtsp(number_of_nodes, number_of_sectors, node_positions):
 
 if __name__ == "__main__":
 
+    if DEBUG:
+        frames_to_next_update_max = 5
+
     input_mode =  input(f"How to accept input? (m: manual, a: automatic, j: from {JSON_DATA_FILE}): ")
     if input_mode == "m":
         node_positions = eval(input("Enter node positions as a list of tuple positions: "))
         number_of_nodes = len(node_positions)
         number_of_sectors = int(input("Enter number of lines to draw: "))
+
+        window_surface = pygame_init()
 
         run_mtsp(number_of_nodes, number_of_sectors, node_positions)
 
@@ -423,16 +453,19 @@ if __name__ == "__main__":
 
         print("Node positions:", node_positions)
 
+        window_surface = pygame_init()
+
         run_mtsp(number_of_nodes, number_of_sectors, node_positions)
 
     elif input_mode == "j":
         with open(JSON_DATA_FILE, "r") as json_file_read:
             data = json.load(json_file_read)
 
+        window_surface = pygame_init()
+
         for test_case in data:
             node_positions = test_case["node_positions"]
             number_of_nodes = len(node_positions)
-
             
             node_position_multiplier = test_case["node_position_multiplier"]
             for i in range(number_of_nodes):
@@ -445,6 +478,11 @@ if __name__ == "__main__":
 
             for number_of_sectors in test_case["sectors"]:
                 run_mtsp(number_of_nodes, number_of_sectors, node_positions)
+
+                if "file_name" in test_case:
+                    png_file_name = test_case["file_name"] + "_sectors_" + str(number_of_sectors) + ".png"
+                    png_file_path = os.path.join(IMAGE_FOLDER_PATH, png_file_name)
+                    pygame.image.save(window_surface, png_file_path)
 
     else:
         print("Input mode not identified.")

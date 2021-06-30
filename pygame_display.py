@@ -24,6 +24,8 @@ def pygame_init():
 
     FONT = pygame.font.Font(None, 30)
 
+    return window_surface
+
 BLACK = (0, 0, 0)
 GREY = (127, 127, 127)
 WHITE = (255, 255, 255)
@@ -38,7 +40,7 @@ VIOLET = (148, 0, 211)
 
 # region sprites
 
-sprites_to_blit = pygame.sprite.Group()
+ui_to_blit = pygame.sprite.Group()
 
 class FPS_label(pygame.sprite.Sprite):
 
@@ -49,9 +51,11 @@ class FPS_label(pygame.sprite.Sprite):
         self.image = FONT.render(str(int(clock.get_fps())), True, WHITE)
         self.rect = self.image.get_rect(bottomright = window_size)
 
-sprites_to_blit.add(FPS_label())
+ui_to_blit.add(FPS_label())
 
 node_size = 15
+
+sprites_to_blit = pygame.sprite.Group()
 
 class Node(pygame.sprite.Sprite):
 
@@ -103,7 +107,6 @@ custom_events_by_key_press = {
 update_required = True
 frames_to_next_update_max = 60
 frames_to_next_update = frames_to_next_update_max
-program_finished = False
 
 functions_to_run_every_second = []
 
@@ -111,9 +114,7 @@ def window_loop_iteration():
     global update_required, frames_to_next_update
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  
-            pygame.quit()
-            global program_finished
-            program_finished = True
+            end_program()
 
         if event.type == pygame.KEYUP:
             if event.key in custom_events_by_key_press:
@@ -133,6 +134,9 @@ def window_loop_iteration():
         draw_lines()
         pygame.display.update()
         update_required = False
+
+    ui_to_blit.update()
+    ui_to_blit.draw(window_surface)
 
     # Comment out below code if actual algorithm appears slow since we dont want to limit the speed of MTSP algorithm.
     # The below line ensures FPS_LIMIT(current value of 60) iterations per second.
