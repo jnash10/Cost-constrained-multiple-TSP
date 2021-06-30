@@ -237,6 +237,8 @@ def initialise_sectors(places, points_sorted_by_angle_index, number_of_sectors, 
     while place_index < number_of_nodes:
         second_place_index = points_sorted_by_angle_index[place_index - 1]
         sectors.append(Sector(places[first_place_index-1], places[second_place_index-1]))
+        if place_index >= number_of_nodes - 1:
+            break
         first_place_index = points_sorted_by_angle_index[place_index]
         place_index += number_of_places_per_sector
 
