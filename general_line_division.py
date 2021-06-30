@@ -1,4 +1,4 @@
-import random, math, typing, statistics, numpy
+import random, math, typing, statistics, numpy, json
 from pygame_display import *
 from python_tsp.exact import solve_tsp_dynamic_programming
 
@@ -8,6 +8,8 @@ window_size = (800, 800)
 window_constants_init()
 
 DEBUG = False
+
+JSON_DATA_FILE = "data.json"
 
 # endregion
 
@@ -113,6 +115,7 @@ class Sector:
             self.places_in_sector.insert(len(self.places_in_sector), place)
 
         else:
+            print(place.place_position, place_to_clockwise.place_position, place_to_anticlockwise.place_position)
             raise Exception("Place being added is not neighbouring a place on either end of self.places_in_sector")
 
         place.change_color(self.sector_color)
@@ -384,19 +387,29 @@ def initialise(number_of_nodes, number_of_sectors, node_positions):
 
     functions_to_run_every_second.append(act_on_first_task_from_possible_place_switches)
 
+def run_mtsp(number_of_nodes, number_of_sectors, node_positions):
+    pygame_init()
+
+    initialise(number_of_nodes, number_of_sectors, node_positions)
+
+    while not program_finished:
+        window_loop_iteration()
+
 # endregion
 
 # region mainloop
 
 if __name__ == "__main__":
 
-    manual_mode = input("Enter node positions manually? (y for yes, anything else for no): ")
-    if manual_mode == "y":
+    input_mode =  input(f"How to accept input? (m: manual, a: automatic, j: from {JSON_DATA_FILE}): ")
+    if input_mode == "m":
         node_positions = eval(input("Enter node positions as a list of tuple positions: "))
         number_of_nodes = len(node_positions)
         number_of_sectors = int(input("Enter number of lines to draw: "))
 
-    else:
+        run_mtsp(number_of_nodes, number_of_sectors, node_positions)
+
+    elif input_mode == "a":
         if DEBUG:
             number_of_nodes = 50
             number_of_sectors = 5
@@ -408,11 +421,31 @@ if __name__ == "__main__":
 
         print("Node positions:", node_positions)
 
-    pygame_init()
+        run_mtsp(number_of_nodes, number_of_sectors, node_positions)
 
-    initialise(number_of_nodes, number_of_sectors, node_positions)
+    elif input_mode == "j":
+        with open(JSON_DATA_FILE, "r") as json_file_read:
+            data = json.load(json_file_read)
 
-    while True:
-        window_loop_iteration()
+        for test_case in data:
+            node_positions = test_case["node_positions"]
+            number_of_nodes = len(node_positions)
+
+            
+            node_position_multiplier = test_case["node_position_multiplier"]
+            for i in range(number_of_nodes):
+                # Scaling the positions to fit the entire window
+                node_positions[i][0] *= node_position_multiplier
+                node_positions[i][1] *= node_position_multiplier
+
+                # Modifying positions since origin is at top left corner.
+                node_positions[i][1] = window_height - node_positions[i][1]
+
+            for number_of_sectors in test_case["sectors"]:
+                run_mtsp(number_of_nodes, number_of_sectors, node_positions)
+
+    else:
+        print("Input mode not identified.")
+        quit()
 
 # endregion

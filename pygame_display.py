@@ -103,6 +103,7 @@ custom_events_by_key_press = {
 update_required = True
 frames_to_next_update_max = 60
 frames_to_next_update = frames_to_next_update_max
+program_finished = False
 
 functions_to_run_every_second = []
 
@@ -111,7 +112,8 @@ def window_loop_iteration():
     for event in pygame.event.get():  
         if event.type == pygame.QUIT:  
             pygame.quit()
-            quit()
+            global program_finished
+            program_finished = True
 
         if event.type == pygame.KEYUP:
             if event.key in custom_events_by_key_press:
