@@ -1,5 +1,7 @@
 import random, math, typing, statistics, numpy, json, os
 from pygame_display import *
+
+# https://github.com/fillipe-gsm/python-tsp
 from python_tsp.exact import solve_tsp_dynamic_programming
 
 # region constants
@@ -302,7 +304,8 @@ def draw_lines_seperating_sectors():
     for sector in sectors:
         second_point = sector.first_place.position
         median_point = (first_point[0] + second_point[0]) // 2, (first_point[1] + second_point[1]) // 2
-        add_to_lines_to_blit(hub_position, median_point)
+        if DEBUG:
+            add_to_lines_to_blit(hub_position, median_point)
         first_point = sector.last_place.position
 
 def get_current_sectors_weight():
@@ -344,6 +347,7 @@ def get_distance_matrix_from_points(points):
 
 def solve_by_tsp(points):
     distance_matrix = get_distance_matrix_from_points(points)  # Note that each distance here is squared everywhere
+    distance_matrix[:, 0] = 0
     permutation = solve_tsp_dynamic_programming(distance_matrix) [0]
     return permutation
 
@@ -423,7 +427,15 @@ def run_mtsp(number_of_nodes, number_of_sectors, node_positions):
 if __name__ == "__main__":
 
     if DEBUG:
-        frames_to_next_update_max = 5
+        node_positions = [[320, 480], [448, 400], [304, 528], [64, 96], [496, 528], [256, 736], [288, 784], [80, 272], [400, 144], [448, 96], [352, 752], [144, 400], [624, 608], [64, 464], [384, 608], [432, 160], [48, 752], [688, 640], [80, 96]]
+        number_of_nodes = len(node_positions)
+        number_of_sectors = 5
+
+        window_surface = pygame_init()
+
+        run_mtsp(number_of_nodes, number_of_sectors, node_positions)
+
+        quit()
 
     input_mode =  input(f"How to accept input? (m: manual, a: automatic, j: from {JSON_DATA_FILE}): ")
     if input_mode == "m":
